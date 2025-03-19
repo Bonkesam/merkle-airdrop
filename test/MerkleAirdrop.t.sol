@@ -6,4 +6,4 @@ import {BagelToken} from "../src/BagelToken.sol";
 import {Test} from "forge-std/Test.sol";
 import {console} from "forge-std/console.sol";
 
-contract MerkleAirdropTest is ZkSyncChainChecker, Test {}
+contract MerkleAirdropTest is Test {}
