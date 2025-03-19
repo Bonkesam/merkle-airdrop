@@ -53,14 +53,15 @@ contract MerkleAirdrop is EIP712 {
         bytes32 r,
         bytes32 s
     ) external {
-
         //Check if they have claimed already
         if (s_hasClaimed[account]) {
             revert MerkleAirdrop__AlreadyClaimed();
         }
 
         //Check the signature
-        if (_isValidSignature(account, getMessage(account, amount), v, r, s)) {
+        if (
+            _isValidSignature(account, getMessageHash(account, amount), v, r, s)
+        ) {
             revert MerkleAirdrop__InvalidProof();
         }
 
@@ -78,13 +79,28 @@ contract MerkleAirdrop is EIP712 {
         i_airdropToken.safeTransfer(account, amount);
     }
 
-    function getMessage(address account, uint256 amount) public view returns(bytes32 ) {
-        return _hashTypedDataV4(
-            keccak256(abi.encode(MESSAGE_TYPEHASH, AirdropClaim{account account, amount: amount}))
-        );
+    function getMessageHash(
+        address account,
+        uint256 amount
+    ) public view returns (bytes32) {
+        return
+            _hashTypedDataV4(
+                keccak256(
+                    abi.encode(
+                        MESSAGE_TYPEHASH,
+                        AirdropClaim({account: account, amount: amount})
+                    )
+                )
+            );
     }
 
-    function _isValidSignature(address account, bytes32 digest, uint8 v, bytes32 r, bytes32 s) internal pure returns(bool){
+    function _isValidSignature(
+        address account,
+        bytes32 digest,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) internal pure returns (bool) {
         (address actualSigner, , ) = ECDSA.tryRecover(digest, v, r, s);
         return actualSigner == account;
     }
