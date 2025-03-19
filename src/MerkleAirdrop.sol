@@ -48,10 +48,20 @@ contract MerkleAirdrop is EIP712 {
     function claim(
         address account,
         uint256 amount,
-        bytes32[] calldata merkleProof
+        bytes32[] calldata merkleProof,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external {
+
+        //Check if they have claimed already
         if (s_hasClaimed[account]) {
             revert MerkleAirdrop__AlreadyClaimed();
+        }
+
+        //Check the signature
+        if (_isValidSignature(account, getMessage(account, amount), v, r, s)) {
+            revert MerkleAirdrop__InvalidProof();
         }
 
         bytes32 leaf = keccak256(
@@ -66,6 +76,17 @@ contract MerkleAirdrop is EIP712 {
         emit Claimed(account, amount);
         // transfer the tokens
         i_airdropToken.safeTransfer(account, amount);
+    }
+
+    function getMessage(address account, uint256 amount) public view returns(bytes32 ) {
+        return _hashTypedDataV4(
+            keccak256(abi.encode(MESSAGE_TYPEHASH, AirdropClaim{account account, amount: amount}))
+        );
+    }
+
+    function _isValidSignature(address account, bytes32 digest, uint8 v, bytes32 r, bytes32 s) internal pure returns(bool){
+        (address actualSigner, , ) = ECDSA.tryRecover(digest, v, r, s);
+        return actualSigner == account;
     }
 
     function getMerkleRoot() external view returns (bytes32) {
